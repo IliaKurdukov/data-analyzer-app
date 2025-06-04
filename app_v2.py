@@ -33,12 +33,7 @@ if uploaded_file:
         if len(cols) == 0:
             st.error("В файле нет столбцов")
         else:
-            selected_col = st.selectbox("Выберите столбец для анализа", cols)
-
-            # Диаграмма
-            fig, ax = plt.subplots()
-            ax.hist(df[selected_col], bins=20)
-            st.pyplot(fig)
+            col = st.selectbox("Выберите столбец для анализа", cols)
 
             n_resp = df.shape[0]
 
@@ -90,9 +85,10 @@ if uploaded_file:
               plt.ylabel('')
 
             # Диаграмма
-            fig, ax = plt.subplots()
-            ax.hist(df[selected_col], bins=20)
-            st.pyplot(fig)
+            #fig, ax = plt.subplots()
+            #ax.hist(df[selected_col], bins=20)
+            #st.pyplot(fig)
+            get_barplot(col)
 
     except Exception as e:
         st.error(f"Ошибка: {str(e)}")
