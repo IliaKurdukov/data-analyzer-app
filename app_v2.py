@@ -6,11 +6,27 @@ import seaborn as sns
 
 st.title("📊 Персональный анализатор данных")
 
-uploaded_file = st.file_uploader("Загрузите SAV файл")
+import tempfile
+import pyreadstat
+import streamlit as st
+
+uploaded_file = st.file_uploader("Загрузите SAV файл (SPSS)", type="sav")
+
 if uploaded_file:
     try:
-        df, meta = pyreadstat.read_sav(uploaded_file)
-        st.success("Данные успешно загружены!")
+        # Создаем временный файл
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".sav") as tmp:
+            # Записываем содержимое загруженного файла во временный файл
+            tmp.write(uploaded_file.getvalue())
+            tmp_path = tmp.name
+        
+        # Читаем временный файл
+        df, meta = pyreadstat.read_sav(tmp_path)
+        st.success(f"Данные успешно загружены! Записей: {len(df)}")
+        
+        # Удаляем временный файл (опционально)
+        import os
+        os.unlink(tmp_path)
 
         # Автоматическое определение столбцов
         cols = df.columns
