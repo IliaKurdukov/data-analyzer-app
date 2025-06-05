@@ -28,7 +28,6 @@ if uploaded_file:
 
         # Читаем временный файл
         df, meta = pyreadstat.read_sav(tmp_path)
-        old_meta = meta
         n_resp = len(df)
         st.success(f"Данные успешно загружены! Записей: {n_resp}")
 
@@ -36,24 +35,26 @@ if uploaded_file:
         import os
         os.unlink(tmp_path)
        
-       # Автоматическое определение столбцов
-        list_of_questions = []
-        for key in old_meta.column_names_to_labels:
-          if old_meta.column_names_to_labels[key] in list_of_questions:
+        # Автоматическое определение столбцов
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        meta_inside_out = {}
+        for col in numeric_cols:
+          if meta.column_names_to_labels[col] in list_of_questions:
             continue
           else:
-            list_of_questions.append(old_meta.column_names_to_labels[key])
-        meta_inside_out = {}
-        for question in list_of_questions:
-          for key in old_meta.column_names_to_labels:
-            if old_meta.column_names_to_labels[key] == question:
+            meta_inside_out[meta.column_names_to_labels[col]] = ''
+            #list_of_questions.append(meta.column_names_to_labels[col])
+        #meta_inside_out = {}
+        for question in meta_inside_out:
+          for key in meta.column_names_to_labels:
+            if meta.column_names_to_labels[key] == question:
               meta_inside_out[question] = key
               break
         
         if len(list_of_questions) == 0:
-            st.error("В файле нет столбцов")
+            st.error("В файле нет количественных данных")
         else:
-            question = st.selectbox("Выберите столбец для вывода распределения", list_of_questions)
+            question = st.selectbox("Выберите вопрос для вывода распределения", list_of_questions)
             col = meta_inside_out[question]
 
             def is_multi_response(col):
@@ -327,7 +328,7 @@ if uploaded_file:
                 return {'table': table,
                         'notes': notes}
 
-            question2 = st.selectbox("Выберите уторой столбец для вывода таблицы сопряженности", list_of_questions)
+            question2 = st.selectbox("Выберите второй вопрос для вывода таблицы сопряженности", list_of_questions)
             col2 = meta_inside_out[question2]
 
             result = create_crosstab(col2, col)
