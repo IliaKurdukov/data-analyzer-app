@@ -183,6 +183,7 @@ if uploaded_file:
             ax.spines['bottom'].set_visible(False)
             #ax.spines['left'].set_visible(False)
 
+            fig, ax = plt.subplots()
             ax.bar_label(ax.containers[0], label_type = 'edge', padding=5, fontsize=14, fmt = '%.1f%%')
             plt.xticks([])
             plt.yticks(fontsize=10)
