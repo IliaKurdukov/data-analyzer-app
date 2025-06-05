@@ -4,7 +4,6 @@ matplotlib
 numpy
 seaborn
 pyreadstat
-tempfile
 re
 math
 scipy
