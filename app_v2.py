@@ -165,7 +165,7 @@ if uploaded_file:
             clean_question_labels(meta)
             clean_value_labels(meta)
             
-            #def get_barplot1(col):
+            #def get_barplot(col):
             data = process_multi_response_1(col)
             plot_df=data.value_counts().div(n_resp/100)
             plot_df = pd.DataFrame(plot_df)
