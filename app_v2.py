@@ -54,7 +54,7 @@ if uploaded_file:
             st.error("В файле нет столбцов")
         else:
             question = st.selectbox("Выберите столбец для вывода распределения", list_of_questions)
-            col = 
+            col = meta_inside_out[question]
 
             def is_multi_response(col):
               '''
