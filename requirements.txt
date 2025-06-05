@@ -2,5 +2,11 @@ streamlit
 pandas
 matplotlib
 numpy
-pyreadstat
 seaborn
+pyreadstat
+tempfile
+re
+math
+scipy
+statsmodels
+typing
