@@ -185,6 +185,7 @@ if uploaded_file:
             ax.bar_label(ax.containers[0], label_type = 'edge', padding=5, fontsize=14, fmt = '%.1f%%')
             plt.xticks([])
             plt.yticks(fontsize=10)
+            question = meta.column_names_to_labels[col] # текст вопроса
             if len(question) > 30:
               question = question.replace('? ', '?\n')
               question = question.replace('. ', '.\n')
