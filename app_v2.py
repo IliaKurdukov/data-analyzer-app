@@ -54,6 +54,7 @@ if uploaded_file:
             st.error("В файле нет столбцов")
         else:
             question = st.selectbox("Выберите столбец для вывода распределения", list_of_questions)
+            col = 
 
             def is_multi_response(col):
               '''
@@ -78,16 +79,6 @@ if uploaded_file:
                     data = pd.concat([data, df[key]],ignore_index=True)
               else:
                 data = df[col]
-              return(data)
-
-            def process_multi_response_2(question):
-              '''
-              Объединяет столбцы в вопросах с множественным выбором ответа (для 1 вопроса)
-              '''
-              data = pd.DataFrame()
-              for key in meta.column_names_to_labels:
-                if meta.column_names_to_labels[key] == question:
-                  data = pd.concat([data, df[key]],ignore_index=True)
               return(data)
 
             def unify_questions(labels_dict: Dict[str, str]) -> Dict[str, str]:
@@ -174,16 +165,14 @@ if uploaded_file:
             clean_question_labels(meta)
             clean_value_labels(meta)
             
-            #def get_barplot2(question):
-            data = process_multi_response_2(question)
+            #def get_barplot1(col):
+            data = process_multi_response_1(col)
             plot_df=data.value_counts().div(n_resp/100)
             plot_df = pd.DataFrame(plot_df)
             plot_df.reset_index(names=['Ответ'], inplace=True)
             plot_df['ans'] = plot_df['Ответ']
             plot_df['ans'] = plot_df['ans'].apply(lambda x: 0 if x < 90 else x)
             plot_df.sort_values(by=['ans', 'count'], ascending = [True, False], inplace=True)
-
-            col = meta_inside_out[question]
             if col in meta.variable_value_labels:
               plot_df['Ответ'] = plot_df['Ответ'].map(lambda x: meta.variable_value_labels[col][x])
 
@@ -197,14 +186,13 @@ if uploaded_file:
             ax.bar_label(ax.containers[0], label_type = 'edge', padding=5, fontsize=14, fmt = '%.1f%%')
             plt.xticks([])
             plt.yticks(fontsize=10)
-  
-            question = meta.column_names_to_labels[col]
+
             if len(question) > 30:
               question = question.replace('? ', '?\n')
               question = question.replace('. ', '.\n')
             plt.title(f'{question}', fontsize=14, pad=10)
             plt.xlabel('', fontsize=1)
-            plt.ylabel('', fontsize=1)
+            plt.ylabel('', fontsize=1);
 
             # Диаграмма
             st.pyplot(fig)
