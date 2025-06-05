@@ -332,7 +332,7 @@ if uploaded_file:
 
             result = create_crosstab(col2, col)
             st.table(result['table'])
-            print(result['notes'])
+            st.write(result['notes'])
 
     except Exception as e:
         st.error(f"Ошибка: {str(e)}")
