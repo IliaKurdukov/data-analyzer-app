@@ -80,6 +80,16 @@ if uploaded_file:
                 data = df[col]
               return(data)
 
+            def process_multi_response_2(question):
+              '''
+              Объединяет столбцы в вопросах с множественным выбором ответа (для 1 вопроса)
+              '''
+              data = pd.DataFrame()
+              for key in meta.column_names_to_labels:
+                if meta.column_names_to_labels[key] == question:
+                  data = pd.concat([data, df[key]],ignore_index=True)
+              return(data)
+
             def unify_questions(labels_dict: Dict[str, str]) -> Dict[str, str]:
                 """
                 Унифицирует вопросы с одинаковыми числовыми префиксами.
