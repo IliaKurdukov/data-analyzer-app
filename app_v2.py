@@ -330,7 +330,7 @@ if uploaded_file:
             question2 = st.selectbox("Выберите уторой столбец для вывода таблицы сопряженности", list_of_questions)
             col2 = meta_inside_out[question2]
 
-            result = create_crosstab(col, col2)
+            result = create_crosstab(col2, col)
             st.table(result['table'])
             print(result['notes'])
 
