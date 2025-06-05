@@ -177,7 +177,7 @@ if uploaded_file:
               plot_df['Ответ'] = plot_df['Ответ'].map(lambda x: meta.variable_value_labels[col][x])
             
             fig, ax = plt.subplots()
-            plt.figure(figsize=(5, 4))
+            #plt.figure(figsize=(5, 4))
             ax = sns.barplot(x=plot_df['count'], y=plot_df['Ответ'].astype(str), color = '#E62083') #E62083 #12AFFF
             ax.spines['top'].set_visible(False)
             ax.spines['right'].set_visible(False)
