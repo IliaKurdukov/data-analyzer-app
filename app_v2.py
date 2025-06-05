@@ -331,7 +331,7 @@ if uploaded_file:
             col2 = meta_inside_out[question2]
 
             result = create_crosstab(col, col2)
-            display(result['table'])
+            st.table(result['table'])
             print(result['notes'])
 
     except Exception as e:
