@@ -37,18 +37,18 @@ if uploaded_file:
         os.unlink(tmp_path)
        
        # Автоматическое определение столбцов
-            list_of_questions = []
-            for key in old_meta.column_names_to_labels:
-              if old_meta.column_names_to_labels[key] in list_of_questions:
-                continue
-              else:
-                list_of_questions.append(old_meta.column_names_to_labels[key])
-            meta_inside_out = {}
-            for question in list_of_questions:
-              for key in old_meta.column_names_to_labels:
-                if old_meta.column_names_to_labels[key] == question:
-                  meta_inside_out[question] = key
-                  break
+        list_of_questions = []
+        for key in old_meta.column_names_to_labels:
+          if old_meta.column_names_to_labels[key] in list_of_questions:
+            continue
+          else:
+            list_of_questions.append(old_meta.column_names_to_labels[key])
+        meta_inside_out = {}
+        for question in list_of_questions:
+          for key in old_meta.column_names_to_labels:
+            if old_meta.column_names_to_labels[key] == question:
+              meta_inside_out[question] = key
+              break
         
         if len(list_of_questions) == 0:
             st.error("В файле нет столбцов")
