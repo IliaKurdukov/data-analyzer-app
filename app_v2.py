@@ -37,15 +37,14 @@ if uploaded_file:
        
         # Автоматическое определение столбцов
         numeric_cols = df.select_dtypes(include=['number']).columns
-        meta_inside_out = {}
-        for col in numeric_cols:
-          if meta.column_names_to_labels[col] in list_of_questions:
+        list_of_questions = []
+        for key in numeric_cols:
+          if meta.column_names_to_labels[key] in list_of_questions:
             continue
           else:
-            meta_inside_out[meta.column_names_to_labels[col]] = ''
-            #list_of_questions.append(meta.column_names_to_labels[col])
-        #meta_inside_out = {}
-        for question in meta_inside_out:
+            list_of_questions.append(meta.column_names_to_labels[key])
+        meta_inside_out = {}
+        for question in list_of_questions:
           for key in meta.column_names_to_labels:
             if meta.column_names_to_labels[key] == question:
               meta_inside_out[question] = key
