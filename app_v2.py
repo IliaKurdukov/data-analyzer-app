@@ -454,17 +454,83 @@ if uploaded_file:
               plt.ylabel('', fontsize=1)
               return fig
 
+            def get_stacked(table_columns):
+              questions = []
+              for col in table_columns:
+                questions.append(meta.column_names_to_labels[col])
+              question = commonprefix(questions) # текст вопроса
+              question = format_title(question)
+              question += ' ...'
+              long_df = df.melt(
+                  value_vars=table_columns,
+                  var_name='Вопрос',
+                  value_name='Ответ'
+              )
+              plot_df = (long_df
+                        .groupby(['Вопрос', 'Ответ'])
+                        .size()
+                        .unstack(fill_value=0)  # Преобразуем в широкий формат
+                        .apply(lambda x: 100 * x / x.sum(), axis=1)  # Нормировка по строкам
+                        .stack()
+                        .reset_index(name='Доля (%)'))
+              plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: meta.column_names_to_labels[x])
+              plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: x[len(question)-4:])
+              if table_columns[0] in meta.variable_value_labels:
+                plot_df['Ответ'] = plot_df['Ответ'].map(lambda x: meta.variable_value_labels[table_columns[0]][x])
+              plot_df['lenth'] = plot_df['Вопрос'].apply(lambda x: get_max_line_length(x))
+              max_length_ticks = plot_df['lenth'].max()
+              heigh = 4.5
+              if len(plot_df) > 20:
+                heigh = len(plot_df) * 0.225
+              colors = ['#E62083', '#12AFFF']
+              n_sectors = len(plot_df['Ответ'].unique())
+              cmap = LinearSegmentedColormap.from_list('custom_gradient', colors, N=n_sectors)
+              sector_colors = [cmap(i) for i in np.linspace(0, 1, n_sectors)]
+              fig, ax = plt.subplots(figsize=(5, heigh))
+              sns.barplot(x=plot_df['Доля (%)'],
+                                y=plot_df['Вопрос'],
+                                hue = plot_df['Ответ'],
+                                palette=sector_colors,
+                                legend=True)
+              ax.set_yticks(range(len(table_columns)))
+              #x.set_yticklabels(plot_df['Ответ'])
+              ax.spines['top'].set_visible(False)
+              ax.spines['right'].set_visible(False)
+              ax.spines['bottom'].set_visible(False)
+              for container in ax.containers:
+                  ax.bar_label(container,
+                              label_type='edge',
+                              padding=5,
+                              fontsize=10,
+                              fmt='%.0f',
+                              fontweight='bold',
+                              fontfamily='sans-serif')
+              x = (50-max_length_ticks)/100
+              plt.legend(
+                  title=False,
+                  bbox_to_anchor=(x, 0),
+                  loc='upper center',
+                  ncol=len(plot_df['Ответ'].unique()),
+                  frameon=False
+              )
+              plt.xticks([])
+              plt.yticks(fontsize=10)
+              plt.title(f'{question} (в %)', x=x, fontsize=14, pad=10)
+              plt.xlabel('', fontsize=1)
+              plt.ylabel('', fontsize=1)
+              return fig
+
             # Диаграмма
             if vis_type == "Гистограмма":
               fig = get_hist(col)
             elif vis_type == "Круговая диаграмма":
-              fig = get_pie(col)
+              fig = get_piechart(col)
             elif vis_type == "Столбчатая диаграмма":
-              fig = get_barplot(col)
               is_sorted=False
-            elif vis_type == "Столбчатая диаграмма c сортировкой":
               fig = get_barplot(col)
+            elif vis_type == "Столбчатая диаграмма c сортировкой":
               is_sorted=True
+              fig = get_barplot(col)
             elif vis_type == "Диаграмма с группировкой":
               fig = get_stacked(table_columns)
             st.pyplot(fig)
@@ -642,7 +708,7 @@ if uploaded_file:
             question2 = st.selectbox("Выберите второй вопрос для вывода таблицы сопряженности", list_of_questions)
             col2 = meta_inside_out[question2]
 
-            result = create_crosstab(col2, col)
+            result = create_crosstab(col, col2)
             st.table(result['table'])
             st.write(result['notes'])
 
