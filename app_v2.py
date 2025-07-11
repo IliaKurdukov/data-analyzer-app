@@ -526,11 +526,9 @@ if uploaded_file:
             elif vis_type == "Круговая диаграмма":
               fig = get_piechart(col)
             elif vis_type == "Столбчатая диаграмма":
-              is_sorted=False
-              fig = get_barplot(col)
-            elif vis_type == "Столбчатая диаграмма с сортировкой":
-              is_sorted=True
-              fig = get_barplot(col)
+              fig = get_barplot(col, is_sorted=False)
+            elif vis_type == "Столбчатая диаграмма с сортировкой": 
+              fig = get_barplot(col, is_sorted=True)
             elif vis_type == "Диаграмма с группировкой":
               fig = get_stacked(table_columns)
             st.pyplot(fig)
