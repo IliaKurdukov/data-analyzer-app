@@ -7,3 +7,4 @@ pyreadstat
 scipy
 statsmodels
 typing
+os
