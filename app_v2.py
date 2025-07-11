@@ -528,7 +528,7 @@ if uploaded_file:
             elif vis_type == "Столбчатая диаграмма":
               is_sorted=False
               fig = get_barplot(col)
-            elif vis_type == "Столбчатая диаграмма c сортировкой":
+            elif vis_type == "Столбчатая диаграмма с сортировкой":
               is_sorted=True
               fig = get_barplot(col)
             elif vis_type == "Диаграмма с группировкой":
