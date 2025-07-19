@@ -344,7 +344,8 @@ if uploaded_file:
 
             def get_piechart(col):
               data = process_multi_response_1(col)
-              plot_df=data.value_counts().div(n_resp/100)
+              plot_df=round(data.value_counts().div(df[col].count()/100))
+              plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
               plot_df = pd.DataFrame(plot_df)
               plot_df.reset_index(names=['Ответ'], inplace=True)
               plot_df['ans'] = plot_df['Ответ']
@@ -402,7 +403,8 @@ if uploaded_file:
 
             def get_barplot(col, is_sorted=True):
               data = process_multi_response_1(col)
-              plot_df=data.value_counts().div(n_resp/100)
+              plot_df=round(data.value_counts().div(df[col].count()/100))
+              plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
               plot_df = pd.DataFrame(plot_df)
               plot_df.reset_index(names=['Ответ'], inplace=True)
               plot_df['ans'] = plot_df['Ответ']
@@ -527,7 +529,7 @@ if uploaded_file:
               fig = get_piechart(col)
             elif vis_type == "Столбчатая диаграмма":
               fig = get_barplot(col, is_sorted=False)
-            elif vis_type == "Столбчатая диаграмма с сортировкой": 
+            elif vis_type == "Столбчатая диаграмма с сортировкой":
               fig = get_barplot(col, is_sorted=True)
             elif vis_type == "Диаграмма с группировкой":
               fig = get_stacked(table_columns)
@@ -563,7 +565,10 @@ if uploaded_file:
                     return series.map(lambda x: meta.variable_value_labels[series.name].get(x, x))
                 return series
 
-            def create_crosstab(col1, col2, adjustment_type = 'holm', chi2_threshhold = 0.1, z_threshhold = 0.05, min_n_obs = 10):
+            def smart_format(x, precision=4):
+                return f"{x:.{precision}f}" if abs(x) >= 0.0001 else f"{x:.2e}"
+
+            def create_crosstab(col1, col2, adjustment_type = 'holm', chi2_threshhold = 0.05, z_threshhold = 0.05, min_n_obs = 10):
 
                 """
                 Создает таблицу сопряженности между двумя переменными и выполняет двухэтапный статистический анализ:
@@ -608,12 +613,12 @@ if uploaded_file:
 
                 if chi2_pvalue >= chi2_threshhold:
                     chi2_notes = f'''
-                Результаты применения теста Хи-квадрат свидетельствуют о том, что связь между переменными не является статистически значимой (p = {chi2_pvalue:.5f} ≥ {chi2_threshhold}).
+                Результаты применения теста Хи-квадрат свидетельствуют о том, что связь между переменными не является статистически значимой (p = {smart_format(chi2_pvalue)} ≥ {chi2_threshhold}).
                 В следствие этого групповые сравнения не проводились. \n'''
                     chi2_valid = False
                 else:
                     chi2_notes = f'''
-                Результаты применения теста Хи-квадрат свидетельствуют о том, что связь между переменными является статистически значимой (p = {chi2_pvalue}). \n'''
+                Результаты применения теста Хи-квадрат свидетельствуют о том, что связь между переменными является статистически значимой (p = {smart_format(chi2_pvalue)}). \n'''
                     chi2_valid = True
 
                 # Шаг 3: Проведение z-теста для проверки значимости различий каждой группы против всех остальных
@@ -655,7 +660,7 @@ if uploaded_file:
                             if corr_pvalue < z_threshhold:
                                 significant_groups[(group, answer)] = zstat
                                 detailed_results.append(f'''
-                {group} vs остальные в ответе '{answer}': p = {corr_pvalue}*''')
+                {group} vs остальные в ответе '{answer}': p = {smart_format(corr_pvalue)}*''')
 
                 if len(detailed_results) > 0:
                     z_notes = f'''
@@ -684,20 +689,14 @@ if uploaded_file:
                                 .apply(lambda df: pd.DataFrame([[highlight_significant_groups(df.iloc[i, j], df.index[i], df.columns[j])
                                                     for j in range(df.shape[1])]
                                                     for i in range(df.shape[0])],
-                                                    index=df.index, columns=df.columns), axis=None)\
-                            .set_caption(f'Таблица сопряженности между {col1} и {col2}')
+                                                    index=df.index, columns=df.columns), axis=None)
 
                 notes =  chi2_notes +  z_notes + \
                 f'''
-                Примечание к таблице:
-                - Значения нормированы по столбцам и представлены в %.
-                - Цветом подсвечены ячейки, в которых наблюдаемые значения статистически отличаются от остальных групп (p < {z_threshhold}).
-                - Если доля группы ниже всех остальных ячейки выделены розовым цветом, если доля группы выше - фиолетовым.
-                {f"- Тесты учитывают поправку на множественные сравнения методом {adjustment_type}" if adjustment_type else '- Тесты не корректируются поправкой на множественные сравнения'}
-
-                Расшифровка вопросов:
-                {col1} - {meta.column_names_to_labels[col1]}
-                {col2} - {meta.column_names_to_labels[col2]}
+                 Значения нормированы по столбцам и представлены в %.
+                 Цветом подсвечены ячейки, в которых наблюдаемые значения статистически отличаются от остальных групп (p < {z_threshhold}).
+                 Если доля группы ниже всех остальных ячейки выделены розовым цветом, если доля группы выше - фиолетовым.
+                {f"Тесты учитывают поправку на множественные сравнения методом {adjustment_type}" if adjustment_type else 'Тесты не корректируются поправкой на множественные сравнения'}
                 '''
 
                 return {'table': styled_table,
@@ -706,9 +705,82 @@ if uploaded_file:
             question2 = st.selectbox("Выберите второй вопрос для вывода таблицы сопряженности", list_of_questions)
             col2 = meta_inside_out[question2]
 
-            result = create_crosstab(col, col2)
-            st.table(result['table'])
-            st.write(result['notes'])
+            # Параметры тестов
+            with st.expander("⚙️ Настройки статистического анализа", expanded=True):
+                st.markdown("Задайте параметры проверки гипотез:")
+
+                # Бегунок для выбора уровня значимости хи-квадрат
+                alpha_chi2 = st.slider(
+                    "Уровень значимости для теста Хи-квадрат",
+                    min_value=0.01,
+                    max_value=0.10,
+                    value=0.05,
+                    step=0.01,
+                    format="%.2f"
+                )
+
+                # Бегунок для выбора уровня значимости z-теста
+                alpha_z = st.slider(
+                    "Уровень значимости для z-теста пропорций",
+                    min_value=0.01,
+                    max_value=0.10,
+                    value=0.05,
+                    step=0.01,
+                    format="%.2f"
+                )
+
+                # Выбор поправки на множественные сравнения
+                adjustment_method = st.selectbox(
+                    "Метод поправки на множественные сравнения",
+                    options=[
+                        "holm",
+                        "bonferroni",
+                        "fdr_bh",
+                        "Без поправок"
+                    ],
+                    index=0
+                )
+            # Преобразуем "None" в None
+            adjustment_type = None if adjustment_method == "Без поправок" else adjustment_method
+
+            result = create_crosstab(col, col2, adjustment_type, alpha_chi2, alpha_z)
+
+            st.subheader(f'🧾 Таблица сопряженности между {col} и {col2}')
+
+            # Преобразуем Styler в HTML, чтобы избежать прокрутки
+            st.markdown(result['table'].to_html(), unsafe_allow_html=True)
+
+            st.markdown("---")
+            st.subheader("📋 Интерпретация результатов")
+
+            # Разбиваем текст на логические части по ключевым словам
+            notes = result['notes'].strip().split("\n")
+            note_blocks = {
+            "Тест хи-квадрат": [],
+            "Z-тест пропорций": [],
+            "Примечание к таблице": []
+            }
+
+            current_block = None
+            for line in notes:
+                line = line.strip()
+                if not line:
+                    continue
+                if "Хи-квадрат" in line:
+                    current_block = "Тест хи-квадрат"
+                elif "z-тест" in line:
+                    current_block = "Z-тест пропорций"
+                elif "Значения нормированы" in line:
+                    current_block = "Примечание к таблице"
+                if current_block:
+                    note_blocks[current_block].append(line)
+
+            # Отображаем каждый блок
+            for title, lines in note_blocks.items():
+                if lines:
+                    with st.expander(f"🔹 {title}", expanded=True):
+                        for line in lines:
+                            st.markdown(f"- {line}")
 
     except Exception as e:
         st.error(f"Ошибка: {str(e)}")
