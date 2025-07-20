@@ -91,15 +91,17 @@ if uploaded_file:
             if vis_type == "Диаграмма с группировкой":
               if col not in meta.variable_value_labels:
                 st.error("Для выбранного вопроса не построить диаграмму с группировкой")
+                st.stop()
               else:
                 list_of_table_columns = []
-                for question in list_of_questions:
-                  col_try = meta_inside_out[question]
+                for q in list_of_questions:
+                  col_try = meta_inside_out[q]
                   if col_try in meta.variable_value_labels and \
                   meta.variable_value_labels[col] == meta.variable_value_labels[col_try]:
-                    list_of_table_columns.append(question)
+                    list_of_table_columns.append(q)
                 if len(list_of_table_columns) < 2:
                   st.error("Для выбранного вопроса не построить диаграмму с группировкой")
+                  st.stop()
               table_columns_text = st.multiselect(
                   'Выберите дополнительные вопросы для диаграммы с группировкой',
                   list_of_table_columns,
