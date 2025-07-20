@@ -95,7 +95,8 @@ if uploaded_file:
                 list_of_table_columns = []
                 for question in list_of_questions:
                   col_try = meta_inside_out[question]
-                  if meta.variable_value_labels[col] == meta.variable_value_labels[col_try]:
+                  if col_try in meta.variable_value_labels and \
+                  meta.variable_value_labels[col] == meta.variable_value_labels[col_try]:
                     list_of_table_columns.append(question)
                 if len(list_of_table_columns) < 2:
                   st.error("Для выбранного вопроса не построить диаграмму с группировкой")
