@@ -89,15 +89,25 @@ if uploaded_file:
             vis_list.insert(0, vis_type)
             vis_type = st.selectbox("Тип визуализации", vis_list)
             if vis_type == "Диаграмма с группировкой":
+              if col not in meta.variable_value_labels:
+                st.error("Для выбранного вопроса не построить диаграмму с группировкой")
+              else:
+                list_of_table_columns = []
+                for question in list_of_questions:
+                  col_try = meta_inside_out[question]
+                  if meta.variable_value_labels[col] == meta.variable_value_labels[col_try]:
+                    list_of_table_columns.append(question)
+                if len(list_of_table_columns) < 2:
+                  st.error("Для выбранного вопроса не построить диаграмму с группировкой")
               table_columns_text = st.multiselect(
                   'Выберите дополнительные вопросы для диаграммы с группировкой',
-                  list_of_questions,
+                  list_of_table_columns,
                   default=[question]
                   )
               table_columns = []
               for question in table_columns_text:
-                col = meta_inside_out[question]
-                table_columns.append(col)
+                add_col = meta_inside_out[question]
+                table_columns.append(add_col)
 
             def is_multi_response(col):
               '''
@@ -607,7 +617,6 @@ if uploaded_file:
 
                 # Шаг 2: Проведение теста хи-квадрат на наличие связи между переменными
                 _, chi2_pvalue, _, expected = chi2_contingency(contingency_table)
-                chi2_valid = True
 
                 # !!! Здесь должна быть проверка, что ожидаемые значение >= 5 более чем в 80 % ячеек (не включая технические вопросы)
 
@@ -615,11 +624,11 @@ if uploaded_file:
                     chi2_notes = f'''
                 Результаты применения теста Хи-квадрат свидетельствуют о том, что связь между переменными не является статистически значимой (p = {smart_format(chi2_pvalue)} ≥ {chi2_threshhold}).
                 В следствие этого групповые сравнения не проводились. \n'''
-                    chi2_valid = False
+                    chi_valid = False
                 else:
                     chi2_notes = f'''
                 Результаты применения теста Хи-квадрат свидетельствуют о том, что связь между переменными является статистически значимой (p = {smart_format(chi2_pvalue)}). \n'''
-                    chi2_valid = True
+                    chi_valid = True
 
                 # Шаг 3: Проведение z-теста для проверки значимости различий каждой группы против всех остальных
 
@@ -660,14 +669,16 @@ if uploaded_file:
                             if corr_pvalue < z_threshhold:
                                 significant_groups[(group, answer)] = zstat
                                 detailed_results.append(f'''
-                {group} vs остальные в ответе '{answer}': p = {smart_format(corr_pvalue)}*''')
+                {group} vs остальные в ответе '{answer}': p = {smart_format(corr_pvalue)}''')
 
-                if len(detailed_results) > 0:
+                if chi_valid  & (len(detailed_results) > 0):
                     z_notes = f'''
                 Согласно z-тесту пропорций, отдельные группы демонстрируют статистически значимое отличие по доле ответов на конкретные вопросы относительно всех остальных. В частности: {"".join(detailed_results)}'''
-                else:
+                elif chi_valid  & (len(detailed_results) == 0):
                     z_notes = f'''
                 Согласно z-тесту пропорций, статистически значимых отличий на уровне отдельных групп нет.'''
+                elif chi_valid == False:
+                    z_notes = ''
 
                 # Шаг 4: Создаем таблицу сопряженности для отображения в строке вывода
                 crosstab_to_show = pd.crosstab(transformed_col1,
@@ -681,7 +692,7 @@ if uploaded_file:
 
                 def highlight_significant_groups(value, index, column):
                     if (column, index) in significant_groups:
-                        return 'background-color: #7B68EE' if significant_groups[(column, index)] > 0 else 'background-color: #ffc0cb'
+                        return 'background-color: #7449D3' if significant_groups[(column, index)] > 0 else 'background-color: #F91E7F'
                     return ''
 
                 # Применяем стили к таблице
@@ -695,8 +706,11 @@ if uploaded_file:
                 f'''
                  Значения нормированы по столбцам и представлены в %.
                  Цветом подсвечены ячейки, в которых наблюдаемые значения статистически отличаются от остальных групп (p < {z_threshhold}).
-                 Если доля группы ниже всех остальных ячейки выделены розовым цветом, если доля группы выше - фиолетовым.
-                {f"Тесты учитывают поправку на множественные сравнения методом {adjustment_type}" if adjustment_type else 'Тесты не корректируются поправкой на множественные сравнения'}
+                 Если доля группы ниже всех остальных, ячейки выделены розовым цветом, если доля группы выше - фиолетовым.
+                {f"Тесты учитывают поправку на множественные сравнения методом {adjustment_method}" if adjustment_type else 'Тесты не корректируются поправкой на множественные сравнения'}
+                ''' + f'''
+                {col} - {meta.column_names_to_labels[col]}
+                {col2} - {meta.column_names_to_labels[col2]}
                 '''
 
                 return {'table': styled_table,
@@ -711,39 +725,42 @@ if uploaded_file:
 
                 # Бегунок для выбора уровня значимости хи-квадрат
                 alpha_chi2 = st.slider(
-                    "Уровень значимости для теста Хи-квадрат",
-                    min_value=0.01,
-                    max_value=0.10,
-                    value=0.05,
-                    step=0.01,
-                    format="%.2f"
+                    "Уровень значимости для теста Хи-квадрат, %",
+                    min_value= 1,
+                    max_value= 10,
+                    value= 5,
+                    step= 1
                 )
 
                 # Бегунок для выбора уровня значимости z-теста
                 alpha_z = st.slider(
-                    "Уровень значимости для z-теста пропорций",
-                    min_value=0.01,
-                    max_value=0.10,
-                    value=0.05,
-                    step=0.01,
-                    format="%.2f"
+                    "Уровень значимости для z-теста пропорций, %",
+                    min_value= 1,
+                    max_value= 10,
+                    value= 5,
+                    step= 1
                 )
 
                 # Выбор поправки на множественные сравнения
                 adjustment_method = st.selectbox(
                     "Метод поправки на множественные сравнения",
                     options=[
-                        "holm",
-                        "bonferroni",
-                        "fdr_bh",
+                        "Холма",
+                        "Бонферрони",
+                        "Беньямини-Хохберга",
                         "Без поправок"
                     ],
                     index=0
                 )
-            # Преобразуем "None" в None
-            adjustment_type = None if adjustment_method == "Без поправок" else adjustment_method
 
-            result = create_crosstab(col, col2, adjustment_type, alpha_chi2, alpha_z)
+            adjustment_dict = {"Холма": "holm",
+                        "Бонферрони": "bonferroni",
+                        "Беньямини-Хохберга": "fdr_bh",
+                        "Без поправок": None}
+
+            adjustment_type = adjustment_dict[adjustment_method]
+
+            result = create_crosstab(col, col2, adjustment_type, alpha_chi2/100, alpha_z/100)
 
             st.subheader(f'🧾 Таблица сопряженности между {col} и {col2}')
 
@@ -758,7 +775,8 @@ if uploaded_file:
             note_blocks = {
             "Тест хи-квадрат": [],
             "Z-тест пропорций": [],
-            "Примечание к таблице": []
+            "Примечание к таблице": [],
+            "Расшифровка вопросов": []
             }
 
             current_block = None
@@ -772,6 +790,8 @@ if uploaded_file:
                     current_block = "Z-тест пропорций"
                 elif "Значения нормированы" in line:
                     current_block = "Примечание к таблице"
+                elif col in line:
+                    current_block = "Расшифровка вопросов"
                 if current_block:
                     note_blocks[current_block].append(line)
 
