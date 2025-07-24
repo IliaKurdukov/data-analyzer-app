@@ -63,7 +63,7 @@ if uploaded_file:
 
             def classify_question_optimized(col, keywords=None):
                 if keywords is None:
-                    keywords = ["шкал", "насколько", "оцен", "степень", "балл", "уровень"]
+                  keywords = ["шкал", "насколько", "оцен", "степень", "балл", "уровень"]
                 question_text = meta.column_names_to_labels.get(col, "").lower()
                 answer_labels = meta.variable_value_labels.get(col, {})
                 answer_count = len(answer_labels)
@@ -71,7 +71,7 @@ if uploaded_file:
                 if keyword_match:
                   return "Шкальный"
                 else:
-                    return "Категориальный"
+                  return "Категориальный"
 
             unique_answers = df[col].nunique()
             question_type = classify_question_optimized(col)
@@ -358,7 +358,8 @@ if uploaded_file:
             def get_piechart(col):
               data = process_multi_response_1(col)
               plot_df=round(data.value_counts().div(df[col].count()/100))
-              plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
+              if not is_multi_response(col):
+                plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
               plot_df = pd.DataFrame(plot_df)
               plot_df.reset_index(names=['Ответ'], inplace=True)
               plot_df['ans'] = plot_df['Ответ']
@@ -417,7 +418,8 @@ if uploaded_file:
             def get_barplot(col, is_sorted=True):
               data = process_multi_response_1(col)
               plot_df=round(data.value_counts().div(df[col].count()/100))
-              plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
+              if not is_multi_response(col):
+                plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
               plot_df = pd.DataFrame(plot_df)
               plot_df.reset_index(names=['Ответ'], inplace=True)
               plot_df['ans'] = plot_df['Ответ']
