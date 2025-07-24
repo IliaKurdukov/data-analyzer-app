@@ -75,19 +75,38 @@ if uploaded_file:
 
             unique_answers = df[col].nunique()
             question_type = classify_question_optimized(col)
-            if col not in meta.variable_value_labels and unique_answers > 15\
-            and question_type != "Шкальный":
-              vis_type = 'Гистограмма'
+            # Добавляем переменную для отслеживания ручного выбора
+            if 'manual_vis_select' not in st.session_state:
+                st.session_state.manual_vis_select = False
+            # Автоматически определяем тип визуализации для текущего вопроса
+            if col not in meta.variable_value_labels and unique_answers > 15 and question_type != "Шкальный":
+                auto_vis_type = 'Гистограмма'
             elif unique_answers == 2:
-              vis_type = "Круговая диаграмма";
+                auto_vis_type = "Круговая диаграмма"
             elif question_type == "Шкальный":
-              vis_type = "Столбчатая диаграмма"
-            elif question_type != "Шкальный":
-              vis_type = "Столбчатая диаграмма с сортировкой"
-            vis_list = ["Гистограмма", "Столбчатая диаграмма", "Круговая диаграмма", "Столбчатая диаграмма с сортировкой", "Диаграмма с группировкой"]
-            vis_list.remove(vis_type)
-            vis_list.insert(0, vis_type)
-            vis_type = st.selectbox("Тип визуализации", vis_list)
+                auto_vis_type = "Столбчатая диаграмма"
+            else:
+                auto_vis_type = "Столбчатая диаграмма с сортировкой"
+            vis_list = ["Гистограмма", "Столбчатая диаграмма", "Круговая диаграмма", 
+                      "Столбчатая диаграмма с сортировкой", "Диаграмма с группировкой"]
+            # Если пользователь вручную не выбирал тип или вопрос изменился, используем автоматический выбор
+            if not st.session_state.manual_vis_select or st.session_state.last_question != question:
+                current_vis_type = auto_vis_type
+            else:
+                current_vis_type = st.session_state.get('last_vis_type', auto_vis_type)
+            # Упорядочиваем список, чтобы текущий тип был первым
+            ordered_vis_list = [current_vis_type] + [v for v in vis_list if v != current_vis_type]
+            # Создаем selectbox
+            new_vis_type = st.selectbox("Тип визуализации", ordered_vis_list)
+            # Проверяем, изменил ли пользователь выбор
+            if new_vis_type != current_vis_type:
+                st.session_state.manual_vis_select = True
+                st.session_state.last_vis_type = new_vis_type
+            else:
+                st.session_state.manual_vis_select = False
+            # Сохраняем текущий вопрос для сравнения в следующем запуске
+            st.session_state.last_question = question
+            vis_type = new_vis_type
             if vis_type == "Диаграмма с группировкой":
               if col not in meta.variable_value_labels:
                 st.error("Для выбранного вопроса не построить диаграмму с группировкой")
