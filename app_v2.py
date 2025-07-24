@@ -57,10 +57,8 @@ if uploaded_file:
 
         if len(list_of_questions) == 0:
             st.error("В файле нет количественных данных")
+            st.stop()
         else:
-            question = st.selectbox("Выберите вопрос для вывода распределения", list_of_questions)
-            col = meta_inside_out[question]
-
             def classify_question_optimized(col, keywords=None):
                 if keywords is None:
                   keywords = ["шкал", "насколько", "оцен", "степень", "балл", "уровень"]
@@ -72,22 +70,55 @@ if uploaded_file:
                   return "Шкальный"
                 else:
                   return "Категориальный"
+            # Инициализация session_state
+            if 'current_question' not in st.session_state:
+                st.session_state.current_question = None
+            if 'auto_vis_type' not in st.session_state:
+                st.session_state.auto_vis_type = None
 
+            question = st.selectbox("Выберите вопрос для вывода распределения", list_of_questions)
+            col = meta_inside_out[question]
             unique_answers = df[col].nunique()
             question_type = classify_question_optimized(col)
-            if col not in meta.variable_value_labels and unique_answers > 15\
-            and question_type != "Шкальный":
-              vis_type = 'Гистограмма'
+            
+            # Определяем автоматический тип визуализации для текущего вопроса
+            if col not in meta.variable_value_labels and unique_answers > 15 and question_type != "Шкальный":
+                st.session_state.auto_vis_type = 'Гистограмма'
             elif unique_answers == 2:
-              vis_type = "Круговая диаграмма";
+                st.session_state.auto_vis_type = "Круговая диаграмма"
             elif question_type == "Шкальный":
-              vis_type = "Столбчатая диаграмма"
-            elif question_type != "Шкальный":
-              vis_type = "Столбчатая диаграмма с сортировкой"
-            vis_list = ["Гистограмма", "Столбчатая диаграмма", "Круговая диаграмма", "Столбчатая диаграмма с сортировкой", "Диаграмма с группировкой"]
-            vis_list.remove(vis_type)
-            vis_list.insert(0, vis_type)
-            vis_type = st.selectbox("Тип визуализации", vis_list)
+                st.session_state.auto_vis_type = "Столбчатая диаграмма"
+            else:
+                st.session_state.auto_vis_type = "Столбчатая диаграмма с сортировкой"
+
+            vis_list = [
+                "Гистограмма",
+                "Столбчатая диаграмма", 
+                "Круговая диаграмма",
+                "Столбчатая диаграмма с сортировкой",
+                "Диаграмма с группировкой"
+            ]
+
+            # Если вопрос изменился, сбрасываем выбор на автоматический
+            if st.session_state.current_question != question:
+                current_vis_type = st.session_state.auto_vis_type
+                st.session_state.current_question = question
+            else:
+                # Если вопрос не менялся, используем текущее значение из selectbox
+                current_vis_type = st.session_state.get('selected_vis_type', st.session_state.auto_vis_type)
+
+            # Упорядочиваем список
+            ordered_vis_list = [current_vis_type] + [v for v in vis_list if v != current_vis_type]
+
+            # Отображаем selectbox
+            selected_vis_type = st.selectbox("Тип визуализации", ordered_vis_list)
+
+            # Сохраняем выбранный тип
+            st.session_state.selected_vis_type = selected_vis_type
+
+            # Для отображения используем выбранный тип, но при смене вопроса он сбросится
+            vis_type = selected_vis_type
+
             if vis_type == "Диаграмма с группировкой":
               if col not in meta.variable_value_labels:
                 st.error("Для выбранного вопроса не построить диаграмму с группировкой")
