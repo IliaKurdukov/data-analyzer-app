@@ -122,6 +122,9 @@ if uploaded_file:
                 st.session_state.user_selected_vis_type = selected_vis_type
 
             vis_type = selected_vis_type
+            st.write(f"Автоматический тип: {auto_vis_type}")
+            st.write(f"Текущий тип: {current_vis_type}")
+            st.write(f"Ручной выбор: {st.session_state.user_selected_vis_type}")
             if vis_type == "Диаграмма с группировкой":
               if col not in meta.variable_value_labels:
                 st.error("Для выбранного вопроса не построить диаграмму с группировкой")
