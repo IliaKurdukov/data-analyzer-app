@@ -90,29 +90,36 @@ if uploaded_file:
             else:
                 auto_vis_type = "Столбчатая диаграмма с сортировкой"
 
-            vis_list = ["Гистограмма", "Столбчатая диаграмма", "Круговая диаграмма", 
-                      "Столбчатая диаграмма с сортировкой", "Диаграмма с группировкой"]
+            # Полный список доступных типов визуализаций
+            vis_list = [
+                "Гистограмма",
+                "Столбчатая диаграмма", 
+                "Круговая диаграмма",
+                "Столбчатая диаграмма с сортировкой",
+                "Диаграмма с группировкой"
+            ]
 
-            # Если вопрос изменился, сбрасываем ручной выбор
+            # Сбрасываем ручной выбор, если вопрос изменился
             if st.session_state.last_question != question:
-                st.session_state.manual_vis_type = None
+                st.session_state.user_selected_vis_type = None
                 st.session_state.last_question = question
 
-            # Выбираем текущий тип визуализации
-            if st.session_state.manual_vis_type is not None:
-                current_vis_type = st.session_state.manual_vis_type
-            else:
-                current_vis_type = auto_vis_type
+            # Определяем какой тип визуализации использовать
+            current_vis_type = (
+                st.session_state.user_selected_vis_type 
+                if st.session_state.user_selected_vis_type is not None 
+                else auto_vis_type
+            )
 
-            # Упорядочиваем список
+            # Упорядочиваем список, чтобы текущий тип был первым
             ordered_vis_list = [current_vis_type] + [v for v in vis_list if v != current_vis_type]
 
             # Отображаем selectbox
             selected_vis_type = st.selectbox("Тип визуализации", ordered_vis_list)
 
-            # Если пользователь изменил выбор, сохраняем его
+            # Сохраняем ручной выбор пользователя
             if selected_vis_type != current_vis_type:
-                st.session_state.manual_vis_type = selected_vis_type
+                st.session_state.user_selected_vis_type = selected_vis_type
 
             vis_type = selected_vis_type
             if vis_type == "Диаграмма с группировкой":
