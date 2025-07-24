@@ -76,10 +76,10 @@ if uploaded_file:
             unique_answers = df[col].nunique()
             question_type = classify_question_optimized(col)
             # Добавляем переменную для отслеживания ручного выбора
-            if 'last_question' not in st.session_state:
-                st.session_state.last_question = None
-            if 'manual_vis_type' not in st.session_state:
-                st.session_state.manual_vis_type = None
+            if 'last_question_type' not in st.session_state:
+                st.session_state.last_question_type = None
+            if 'user_selected_vis_type' not in st.session_state:
+                st.session_state.user_selected_vis_type = None
             # Определяем автоматический тип визуализации для текущего вопроса
             if col not in meta.variable_value_labels and unique_answers > 15 and question_type != "Шкальный":
                 auto_vis_type = 'Гистограмма'
