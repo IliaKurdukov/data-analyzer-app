@@ -85,7 +85,7 @@ if uploaded_file:
                 auto_vis_type = "Круговая диаграмма"
             elif question_type == "Шкальный":
                 auto_vis_type = "Столбчатая диаграмма"
-            else:
+            elif question_type != "Шкальный":
                 auto_vis_type = "Столбчатая диаграмма с сортировкой"
 
             # Все доступные типы визуализаций
@@ -99,13 +99,7 @@ if uploaded_file:
 
             vis_list.remove(auto_vis_type)
             vis_list.insert(0, auto_vis_type)
-            selected_vis_type = st.selectbox("Тип визуализации", vis_list)
-            if selected_vis_type != auto_vis_type:
-              is_new_question = False
-            if is_new_question:
-              vis_type = auto_vis_type
-            else:
-              vis_type = selected_vis_type
+            vis_type = st.selectbox("Тип визуализации", vis_list)
 
             if vis_type == "Диаграмма с группировкой":
               if col not in meta.variable_value_labels:
