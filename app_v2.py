@@ -359,7 +359,9 @@ if uploaded_file:
               data = process_multi_response_1(col)
               plot_df=round(data.value_counts().div(df[col].count()/100))
               if not is_multi_response(col):
-                plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
+                teck_ans = 100 - plot_df.iloc[:-1].sum()
+                if teck_ans >= 0:
+                  plot_df.iloc[-1] = teck_ans
               plot_df = pd.DataFrame(plot_df)
               plot_df.reset_index(names=['Ответ'], inplace=True)
               plot_df['ans'] = plot_df['Ответ']
@@ -419,7 +421,9 @@ if uploaded_file:
               data = process_multi_response_1(col)
               plot_df=round(data.value_counts().div(df[col].count()/100))
               if not is_multi_response(col):
-                plot_df.iloc[-1] = 100 - plot_df.iloc[:-1].sum()
+                teck_ans = 100 - plot_df.iloc[:-1].sum()
+                if teck_ans >= 0:
+                  plot_df.iloc[-1] = teck_ans
               plot_df = pd.DataFrame(plot_df)
               plot_df.reset_index(names=['Ответ'], inplace=True)
               plot_df['ans'] = plot_df['Ответ']
