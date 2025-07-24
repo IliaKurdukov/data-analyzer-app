@@ -90,7 +90,6 @@ if uploaded_file:
             else:
                 auto_vis_type = "Столбчатая диаграмма с сортировкой"
 
-            # Полный список доступных типов визуализаций
             vis_list = [
                 "Гистограмма",
                 "Столбчатая диаграмма", 
@@ -99,27 +98,32 @@ if uploaded_file:
                 "Диаграмма с группировкой"
             ]
 
-            # Сбрасываем ручной выбор, если вопрос изменился
-            if st.session_state.last_question != question:
-                st.session_state.user_selected_vis_type = None
-                st.session_state.last_question = question
+            # Сбрасываем ручной выбор, если изменился тип вопроса (не просто вопрос, а его тип)
+            current_question_category = "Шкальный" if question_type == "Шкальный" else "Обычный"
 
-            # Определяем какой тип визуализации использовать
+            if st.session_state.last_question_type != current_question_category:
+                st.session_state.user_selected_vis_type = None
+
+            st.session_state.last_question_type = current_question_category
+
+            # Определяем текущий тип визуализации
             current_vis_type = (
                 st.session_state.user_selected_vis_type 
                 if st.session_state.user_selected_vis_type is not None 
                 else auto_vis_type
             )
 
-            # Упорядочиваем список, чтобы текущий тип был первым
+            # Упорядочиваем список
             ordered_vis_list = [current_vis_type] + [v for v in vis_list if v != current_vis_type]
 
             # Отображаем selectbox
             selected_vis_type = st.selectbox("Тип визуализации", ordered_vis_list)
 
-            # Сохраняем ручной выбор пользователя
-            if selected_vis_type != current_vis_type:
+            # Сохраняем ручной выбор только если он отличается от автоматического
+            if selected_vis_type != auto_vis_type:
                 st.session_state.user_selected_vis_type = selected_vis_type
+            else:
+                st.session_state.user_selected_vis_type = None
 
             vis_type = selected_vis_type
             st.write(f"Автоматический тип: {auto_vis_type}")
