@@ -70,11 +70,10 @@ if uploaded_file:
                   return "Шкальный"
                 else:
                   return "Категориальный"
-            # Сбрасываем выбор при каждом запуске (при изменении вопроса)
-            if 'last_question' not in st.session_state:
-                st.session_state.last_question = None
+
 
             question = st.selectbox("Выберите вопрос для вывода распределения", list_of_questions)
+            is_new_question = True
             col = meta_inside_out[question]
             unique_answers = df[col].nunique()
             question_type = classify_question_optimized(col)
@@ -98,26 +97,15 @@ if uploaded_file:
                 "Диаграмма с группировкой"
             ]
 
-            # Если вопрос изменился - сбрасываем на автоматический выбор
-            if st.session_state.last_question != question:
-                current_vis_type = auto_vis_type
-                st.session_state.last_question = question
+            vis_list.remove(auto_vis_type)
+            vis_list.insert(0, auto_vis_type)
+            selected_vis_type = st.selectbox("Тип визуализации", vis_list)
+            if selected_vis_type != auto_vis_type:
+              is_new_question = False
+            if is_new_question:
+              vis_type = auto_vis_type
             else:
-                # Если вопрос не менялся - используем значение из selectbox
-                current_vis_type = st.session_state.get('current_vis_type', auto_vis_type)
-
-            # Создаем selectbox
-            selected_vis_type = st.selectbox(
-                "Тип визуализации",
-                options=vis_list,
-                index=vis_list.index(current_vis_type)  # Явно задаем индекс выбранного типа
-            )
-
-            # Сохраняем выбранный тип (но он будет сброшен при изменении вопроса)
-            st.session_state.current_vis_type = selected_vis_type
-
-            # Для построения графика используем:
-            vis_type = selected_vis_type if st.session_state.last_question == question else auto_vis_type
+              vis_type = selected_vis_type
 
             if vis_type == "Диаграмма с группировкой":
               if col not in meta.variable_value_labels:
