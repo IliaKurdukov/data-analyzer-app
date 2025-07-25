@@ -77,7 +77,7 @@ if uploaded_file:
             col = meta_inside_out[question]
             unique_answers = df[col].nunique()
             question_type = classify_question_optimized(col)
-            
+
             # Определяем автоматический тип визуализации
             if col not in meta.variable_value_labels and unique_answers > 15 and question_type != "Шкальный":
                 auto_vis_type = 'Гистограмма'
@@ -91,19 +91,20 @@ if uploaded_file:
             # Все доступные типы визуализаций
             vis_list = [
                 "Гистограмма",
-                "Столбчатая диаграмма", 
+                "Столбчатая диаграмма",
                 "Круговая диаграмма",
                 "Столбчатая диаграмма с сортировкой",
-                "Диаграмма с группировкой"
+                "Диаграмма с группировкой",
+                "Диаграмма с накоплением"
             ]
 
             vis_list.remove(auto_vis_type)
             vis_list.insert(0, auto_vis_type)
             vis_type = st.selectbox("Тип визуализации", vis_list)
 
-            if vis_type == "Диаграмма с группировкой":
+            if vis_type == "Диаграмма с группировкой" or vis_type == "Диаграмма с накоплением":
               if col not in meta.variable_value_labels:
-                st.error("Для выбранного вопроса не построить диаграмму с группировкой")
+                st.error("Для выбранного вопроса не построить выбранный тип диаграммы")
                 st.stop()
               else:
                 list_of_table_columns = []
@@ -113,7 +114,7 @@ if uploaded_file:
                   meta.variable_value_labels[col] == meta.variable_value_labels[col_try]:
                     list_of_table_columns.append(q)
                 if len(list_of_table_columns) < 2:
-                  st.error("Для выбранного вопроса не построить диаграмму с группировкой")
+                  st.error("Для выбранного вопроса не построить выбранный тип диаграммы")
                   st.stop()
               table_columns_text = st.multiselect(
                   'Выберите дополнительные вопросы для диаграммы с группировкой',
@@ -487,12 +488,12 @@ if uploaded_file:
               plt.xlabel('', fontsize=1)
               plt.ylabel('', fontsize=1)
               return fig
-
+            
             def get_stacked(table_columns):
               questions = []
               for col in table_columns:
-                questions.append(meta.column_names_to_labels[col])
-              question = commonprefix(questions) # текст вопроса
+                  questions.append(meta.column_names_to_labels[col])
+              question = commonprefix(questions)
               question = format_title(question)
               question += ' ...'
               long_df = df.melt(
@@ -503,8 +504,78 @@ if uploaded_file:
               plot_df = (long_df
                         .groupby(['Вопрос', 'Ответ'])
                         .size()
-                        .unstack(fill_value=0)  # Преобразуем в широкий формат
-                        .apply(lambda x: 100 * x / x.sum(), axis=1)  # Нормировка по строкам
+                        .unstack(fill_value=0)
+                        .apply(lambda x: 100 * x / x.sum(), axis=1)
+                        .stack()
+                        .reset_index(name='Доля (%)'))
+              plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: meta.column_names_to_labels[x])
+              plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: x[len(question)-4:])             
+              if table_columns[0] in meta.variable_value_labels:
+                  plot_df['Ответ'] = plot_df['Ответ'].map(lambda x: meta.variable_value_labels[table_columns[0]][x])            
+              plot_df['lenth'] = plot_df['Вопрос'].apply(lambda x: get_max_line_length(x))
+              max_length_ticks = plot_df['lenth'].max()
+              heigh = 4.5
+              if len(plot_df) > 20:
+                  heigh = len(plot_df) * 0.225
+              colors = ['#E62083', '#12AFFF']
+              n_sectors = len(plot_df['Ответ'].unique())
+              cmap = LinearSegmentedColormap.from_list('custom_gradient', colors, N=n_sectors)
+              sector_colors = [cmap(i) for i in np.linspace(0, 1, n_sectors)][::-1]
+              fig, ax = plt.subplots(figsize=(5, heigh))
+              answer_order = sorted(plot_df['Ответ'].unique(), reverse=True)
+              pivot_df = (plot_df.pivot(index='Вопрос', columns='Ответ', values='Доля (%)')
+                          [answer_order]) 
+              pivot_df.plot.barh(
+                  stacked=True,
+                  ax=ax,
+                  color=sector_colors,
+                  legend=True
+              )
+              ax.spines['top'].set_visible(False)
+              ax.spines['right'].set_visible(False)
+              ax.spines['bottom'].set_visible(False)
+              for container in ax.containers:
+                  ax.bar_label(
+                      container,
+                      label_type='center',
+                      padding=0,
+                      fontsize=10,
+                      fmt='%.0f',
+                      fontweight='bold',
+                      fontfamily='sans-serif'
+                  )
+              x = (50 - max_length_ticks) / 100
+              plt.legend(
+                  title=False,
+                  bbox_to_anchor=(x, 0),
+                  loc='upper center',
+                  ncol=len(plot_df['Ответ'].unique()),
+                  frameon=False
+              )
+              plt.xticks([])
+              plt.yticks(fontsize=10)
+              plt.title(f'{question} (в %)', x=x, fontsize=14, pad=10)
+              plt.xlabel('', fontsize=1)
+              plt.ylabel('', fontsize=1)
+              return fig
+
+            def get_grouped(table_columns):
+              questions = []
+              for col in table_columns:
+                questions.append(meta.column_names_to_labels[col])
+              question = commonprefix(questions) 
+              question = format_title(question)
+              question += ' ...'
+              long_df = df.melt(
+                  value_vars=table_columns,
+                  var_name='Вопрос',
+                  value_name='Ответ'
+              )
+              plot_df = (long_df
+                        .groupby(['Вопрос', 'Ответ'])
+                        .size()
+                        .unstack(fill_value=0)  
+                        .apply(lambda x: 100 * x / x.sum(), axis=1)  
                         .stack()
                         .reset_index(name='Доля (%)'))
               plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: meta.column_names_to_labels[x])
@@ -527,7 +598,6 @@ if uploaded_file:
                                 palette=sector_colors,
                                 legend=True)
               ax.set_yticks(range(len(table_columns)))
-              #x.set_yticklabels(plot_df['Ответ'])
               ax.spines['top'].set_visible(False)
               ax.spines['right'].set_visible(False)
               ax.spines['bottom'].set_visible(False)
@@ -564,6 +634,8 @@ if uploaded_file:
             elif vis_type == "Столбчатая диаграмма с сортировкой":
               fig = get_barplot(col, is_sorted=True)
             elif vis_type == "Диаграмма с группировкой":
+              fig = get_grouped(table_columns)
+            elif vis_type == "Диаграмма с накоплением":
               fig = get_stacked(table_columns)
             st.pyplot(fig)
 
