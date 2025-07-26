@@ -18,7 +18,7 @@ from statsmodels.stats.proportion import proportions_ztest
 from scipy.stats import norm
 from typing import Dict
 
-st.title("📊 Анализ количественных данных")
+st.title("📊 Анализатор опросов")
 
 uploaded_file = st.file_uploader("Загрузите SAV файл (SPSS)", type="sav")
 
@@ -488,7 +488,7 @@ if uploaded_file:
               plt.xlabel('', fontsize=1)
               plt.ylabel('', fontsize=1)
               return fig
-            
+
             def get_stacked(table_columns):
               questions = []
               for col in table_columns:
@@ -509,9 +509,9 @@ if uploaded_file:
                         .stack()
                         .reset_index(name='Доля (%)'))
               plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: meta.column_names_to_labels[x])
-              plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: x[len(question)-4:])             
+              plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: x[len(question)-4:])
               if table_columns[0] in meta.variable_value_labels:
-                  plot_df['Ответ'] = plot_df['Ответ'].map(lambda x: meta.variable_value_labels[table_columns[0]][x])            
+                  plot_df['Ответ'] = plot_df['Ответ'].map(lambda x: meta.variable_value_labels[table_columns[0]][x])
               plot_df['lenth'] = plot_df['Вопрос'].apply(lambda x: get_max_line_length(x))
               max_length_ticks = plot_df['lenth'].max()
               heigh = 4.5
@@ -524,7 +524,7 @@ if uploaded_file:
               fig, ax = plt.subplots(figsize=(5, heigh))
               answer_order = sorted(plot_df['Ответ'].unique(), reverse=True)
               pivot_df = (plot_df.pivot(index='Вопрос', columns='Ответ', values='Доля (%)')
-                          [answer_order]) 
+                          [answer_order])
               pivot_df.plot.barh(
                   stacked=True,
                   ax=ax,
@@ -563,7 +563,7 @@ if uploaded_file:
               questions = []
               for col in table_columns:
                 questions.append(meta.column_names_to_labels[col])
-              question = commonprefix(questions) 
+              question = commonprefix(questions)
               question = format_title(question)
               question += ' ...'
               long_df = df.melt(
@@ -574,8 +574,8 @@ if uploaded_file:
               plot_df = (long_df
                         .groupby(['Вопрос', 'Ответ'])
                         .size()
-                        .unstack(fill_value=0)  
-                        .apply(lambda x: 100 * x / x.sum(), axis=1)  
+                        .unstack(fill_value=0)
+                        .apply(lambda x: 100 * x / x.sum(), axis=1)
                         .stack()
                         .reset_index(name='Доля (%)'))
               plot_df['Вопрос'] = plot_df['Вопрос'].map(lambda x: meta.column_names_to_labels[x])
